@@ -34,8 +34,8 @@ loop = asyncio.get_event_loop()
 def main():
     host = get_router_ip()
     start_time = time.time()
-    ports = range(1, 1024)
-    chunk_size = 1024
+    ports = range(1, 101)
+    chunk_size = 101
     open_ports = []
     closed_ports = []
     print(f'Target {host}')

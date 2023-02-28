@@ -1,56 +1,29 @@
-import asyncio
 import socket
 import time
 
-def get_router_ip():
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.connect(('8.8.8.8', 1))
-        return s.getsockname()[0]
+host = '192.168.1.4'
+ports = range(1, 1024)
+open_ports = []
+closed_ports = []
+start_time = time.time()
 
-async def port_scanner(host, port):
+print(f'Target {host}')
+print(f'Ports {ports[0]}-{ports[-1]}')
+
+for port in ports:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(0.1)
     try:
-        conn = asyncio.open_connection(host, port)
-        _, writer = await asyncio.wait_for(conn, timeout=1)
-        writer.close()
-        return True
-    except:
-        return False
-
-async def scan_ports(host, ports):
-    tasks = []
-    open_ports = []
-    closed_ports = []
-    for port in ports:
-        tasks.append(asyncio.create_task(port_scanner(host, port)))
-    results = await asyncio.gather(*tasks)
-    for port, status in zip(ports, results):
-        if status:
-            open_ports.append(port)
-        else:
-            closed_ports.append(port)
-    return open_ports, closed_ports
-
-loop = asyncio.get_event_loop()
-def main():
-    host = get_router_ip()
-    start_time = time.time()
-    ports = range(1, 101)
-    chunk_size = 101
-    open_ports = []
-    closed_ports = []
-    print(f'Target {host}')
-    print(f'Ports {ports[0]}-{ports[-1]}')
-    for i in range(0, len(ports), chunk_size):
-        open, closed = loop.run_until_complete(scan_ports(host, ports[i:i+chunk_size]))
-        open_ports.extend(open)
-        closed_ports.extend(closed)
-    print("Open ports:")
-    for port in open_ports:
+        s.connect((host, port))
+        open_ports.append(port)
         print(f'Port {port} Open')
-    print(f'Open {len(open_ports)}')
-    print(f'Close {len(closed_ports)}')
-    print(f'Duration {time.time() - start_time} secs')
-    
+    except (ConnectionRefusedError, socket.timeout):
+        closed_ports.append(port)
+    except PermissionError:
+        pass
+    finally:
+        s.close()
 
-if __name__ == '__main__':
-    main()
+print(f'Open {len(open_ports)}')
+print(f'Close {len(closed_ports)}')
+print(f'Duration {time.time() - start_time} secs')
